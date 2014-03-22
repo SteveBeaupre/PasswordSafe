@@ -16,6 +16,7 @@ __published:	// IDE-managed Components
 	TButton *ButtonCancel;
 	TButton *ButtonOk;
 	TCheckBox *CheckBoxShow;
+	void __fastcall CheckBoxShowClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TMasterPasswordForm(TComponent* Owner);

@@ -14,3 +14,13 @@ __fastcall TAddPasswordForm::TAddPasswordForm(TComponent* Owner)
 {
 }
 //---------------------------------------------------------------------------
+void __fastcall TAddPasswordForm::CheckBoxShowClick(TObject *Sender)
+{
+	switch(CheckBoxShow->Checked)
+	{
+	case false: LabeledEditPassword->PasswordChar = '*';  break;
+	case true:  LabeledEditPassword->PasswordChar = NULL; break;
+	}
+}
+//---------------------------------------------------------------------------
+

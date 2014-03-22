@@ -14,3 +14,13 @@ __fastcall TMasterPasswordForm::TMasterPasswordForm(TComponent* Owner)
 {
 }
 //---------------------------------------------------------------------------
+void __fastcall TMasterPasswordForm::CheckBoxShowClick(TObject *Sender)
+{
+	switch(CheckBoxShow->Checked)
+	{
+	case false: LabeledEditMasterPassword->PasswordChar = '*';  break;
+	case true:  LabeledEditMasterPassword->PasswordChar = NULL; break;
+	}
+}
+//---------------------------------------------------------------------------
+

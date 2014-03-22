@@ -38,12 +38,15 @@ void __fastcall TMainForm::MenuExitClick(TObject *Sender)
 void __fastcall TMainForm::ButtonAddClick(TObject *Sender)
 {
 	AddPasswordForm->LabeledEditSite->Text = "";
+	AddPasswordForm->LabeledEditUserName->Text = "";
 	AddPasswordForm->LabeledEditPassword->Text = "";
+	AddPasswordForm->CheckBoxShow->OnClick(this);
 
 	if(AddPasswordForm->ShowModal() == mrOk){
 		if(AddPasswordForm->LabeledEditSite->Text.Length() > 0){
 			TListItem *item = ListView->Items->Add();
 			item->Caption = AddPasswordForm->LabeledEditSite->Text;
+			item->SubItems->Add(AddPasswordForm->LabeledEditUserName->Text);
 			item->SubItems->Add(AddPasswordForm->LabeledEditPassword->Text);
 			SetModified(true);
 		}
@@ -55,11 +58,14 @@ void __fastcall TMainForm::ButtonEditClick(TObject *Sender)
 	TListItem *item = ListView->Selected;
 	if(item){
 		AddPasswordForm->LabeledEditSite->Text = item->Caption;
-		AddPasswordForm->LabeledEditPassword->Text = item->SubItems->Strings[0];
+		AddPasswordForm->LabeledEditUserName->Text = item->SubItems->Strings[0];
+		AddPasswordForm->LabeledEditPassword->Text = item->SubItems->Strings[1];
+		AddPasswordForm->CheckBoxShow->OnClick(this);
 
 		if(AddPasswordForm->ShowModal() == mrOk){
 			item->Caption = AddPasswordForm->LabeledEditSite->Text;
-			item->SubItems->Strings[0] = AddPasswordForm->LabeledEditPassword->Text;
+			item->SubItems->Strings[0] = AddPasswordForm->LabeledEditUserName->Text;
+			item->SubItems->Strings[1] = AddPasswordForm->LabeledEditPassword->Text;
 			SetModified(true);
 		}
 	}
@@ -95,6 +101,7 @@ void __fastcall TMainForm::MenuOpenFileClick(TObject *Sender)
 		char fname[MAX_PATH];
 		ConvertUnicodeToChar(fname, MAX_PATH, OpenDialog->FileName.c_str());
 		MasterPasswordForm->LabeledEditMasterPassword->Text = "";
+		MasterPasswordForm->CheckBoxShow->OnClick(this);
 		if(MasterPasswordForm->ShowModal() == mrOk){
 			char MasterPassword[MAX_PATH];
 			ConvertUnicodeToChar(MasterPassword, MAX_PATH, MasterPasswordForm->LabeledEditMasterPassword->Text.c_str());
@@ -113,6 +120,7 @@ void __fastcall TMainForm::MenuSaveAsFileClick(TObject *Sender)
 	if(SaveDialog->Execute()){
 		char fname[MAX_PATH];
 		ConvertUnicodeToChar(fname, MAX_PATH, SaveDialog->FileName.c_str());
+		MasterPasswordForm->CheckBoxShow->OnClick(this);
 		if(MasterPasswordForm->ShowModal() == mrOk){
 			char MasterPassword[MAX_PATH];
 			ConvertUnicodeToChar(MasterPassword, MAX_PATH, MasterPasswordForm->LabeledEditMasterPassword->Text.c_str());
@@ -129,6 +137,7 @@ void __fastcall TMainForm::MenuSaveAsFileClick(TObject *Sender)
 void __fastcall TMainForm::MenuSaveFileClick(TObject *Sender)
 {
 	if(CurrentFileName.Length() > 0){
+		MasterPasswordForm->CheckBoxShow->OnClick(this);
 		if(MasterPasswordForm->ShowModal() == mrOk){
 			char MasterPassword[MAX_PATH];
 			ConvertUnicodeToChar(MasterPassword, MAX_PATH, MasterPasswordForm->LabeledEditMasterPassword->Text.c_str());
@@ -148,6 +157,7 @@ void __fastcall TMainForm::MenuCloseFileClick(TObject *Sender)
 	if(CurrentFileModified){
 		if(MessageBoxA(this->Handle, "The current file has been modified. Save changes?", "Warning", MB_YESNOCANCEL) == ID_YES){
 			if(CurrentFileName.Length() > 0){
+				MasterPasswordForm->CheckBoxShow->OnClick(this);
 				if(MasterPasswordForm->ShowModal() == mrOk){
 					char MasterPassword[MAX_PATH];
 					ConvertUnicodeToChar(MasterPassword, MAX_PATH, MasterPasswordForm->LabeledEditMasterPassword->Text.c_str());
@@ -206,13 +216,16 @@ int __fastcall TMainForm::CalcBufferSize()
 
 	for(DWORD i = 0; i < NumEntries; i++){
 		TListItem *item = ListView->Items->Item[i];
-		UnicodeString itName = item->Caption;
-		UnicodeString itPass = item->SubItems->Strings[0];
 
+		UnicodeString itSite = item->Caption;
+		UnicodeString itName = item->SubItems->Strings[0];
+		UnicodeString itPass = item->SubItems->Strings[1];
+
+		int SiteLen = itSite.Length();
 		int NameLen = itName.Length();
 		int PassLen = itPass.Length();
 
-		size += (sizeof(int) * 2) + NameLen + PassLen;
+		size += (sizeof(int) * 3) + SiteLen + NameLen + PassLen;
 	}
 
 	return size;
@@ -264,29 +277,38 @@ bool __fastcall TMainForm::LoadList(char *fname, char *password)
 
 		for(DWORD i = 0; i < NumEntries; i++){
 
+			int SiteLen = 0;
 			int NameLen = 0;
 			int PassLen = 0;
+			memcpy(&SiteLen, &pBuffer[BufIndx], sizeof(int));
+			BufIndx += sizeof(int);
 			memcpy(&NameLen, &pBuffer[BufIndx], sizeof(int));
 			BufIndx += sizeof(int);
 			memcpy(&PassLen, &pBuffer[BufIndx], sizeof(int));
 			BufIndx += sizeof(int);
 
+			char *pSite = new char[SiteLen+1];
 			char *pName = new char[NameLen+1];
 			char *pPass = new char[PassLen+1];
+			ZeroMemory(pSite, SiteLen+1);
 			ZeroMemory(pName, NameLen+1);
 			ZeroMemory(pPass, PassLen+1);
 
+			memcpy(pSite, &pBuffer[BufIndx], SiteLen);
+			BufIndx += SiteLen;
 			memcpy(pName, &pBuffer[BufIndx], NameLen);
 			BufIndx += NameLen;
 			memcpy(pPass, &pBuffer[BufIndx], PassLen);
 			BufIndx += PassLen;
 
 			TListItem *item = ListView->Items->Add();
-			item->Caption = UnicodeString(pName);
+			item->Caption = UnicodeString(pSite);
+			item->SubItems->Add(UnicodeString(pName));
 			item->SubItems->Add(UnicodeString(pPass));
 
 			delete [] pPass;
 			delete [] pName;
+			delete [] pSite;
 		}
 
 		f.Close();
@@ -314,20 +336,29 @@ bool __fastcall TMainForm::SaveList(char *fname, char *password)
 		for(DWORD i = 0; i < NumEntries; i++){
 
 			TListItem *item = ListView->Items->Item[i];
-			UnicodeString itName = item->Caption;
-			UnicodeString itPass = item->SubItems->Strings[0];
+			UnicodeString itSite = item->Caption;
+			UnicodeString itName = item->SubItems->Strings[0];
+			UnicodeString itPass = item->SubItems->Strings[1];
 
+			int SiteLen = itSite.Length();
 			int NameLen = itName.Length();
 			int PassLen = itPass.Length();
+			char *pSite = new char[SiteLen+1];
 			char *pName = new char[NameLen+1];
 			char *pPass = new char[PassLen+1];
+			ConvertUnicodeToChar(pSite, SiteLen+1, itSite.c_str());
 			ConvertUnicodeToChar(pName, NameLen+1, itName.c_str());
 			ConvertUnicodeToChar(pPass, PassLen+1, itPass.c_str());
 
+			memcpy(&pBuffer[BufIndx], &SiteLen, sizeof(int));
+			BufIndx += sizeof(int);
 			memcpy(&pBuffer[BufIndx], &NameLen, sizeof(int));
 			BufIndx += sizeof(int);
 			memcpy(&pBuffer[BufIndx], &PassLen, sizeof(int));
 			BufIndx += sizeof(int);
+
+			memcpy(&pBuffer[BufIndx], pSite, SiteLen);
+			BufIndx += SiteLen;
 			memcpy(&pBuffer[BufIndx], pName, NameLen);
 			BufIndx += NameLen;
 			memcpy(&pBuffer[BufIndx], pPass, PassLen);
@@ -335,6 +366,7 @@ bool __fastcall TMainForm::SaveList(char *fname, char *password)
 
 			delete [] pPass;
 			delete [] pName;
+			delete [] pSite;
 		}
 
 		DWORD Hash = Buffer.Hash();
@@ -355,5 +387,4 @@ bool __fastcall TMainForm::SaveList(char *fname, char *password)
 
 	return false;
 }
-//---------------------------------------------------------------------------
 
