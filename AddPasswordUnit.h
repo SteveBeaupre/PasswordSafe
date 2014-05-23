@@ -22,6 +22,8 @@ __published:	// IDE-managed Components
 private:	// User declarations
 public:		// User declarations
 	__fastcall TAddPasswordForm(TComponent* Owner);
+	void __fastcall Initialize(UnicodeString Site, UnicodeString UserName, UnicodeString Password);
+	void __fastcall Initialize(TListItem *item);
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TAddPasswordForm *AddPasswordForm;
