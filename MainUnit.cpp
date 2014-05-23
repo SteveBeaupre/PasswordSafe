@@ -10,7 +10,8 @@
 TMainForm *MainForm;
 //---------------------------------------------------------------------------
 //#define OLD_LOADING_CODE
-//#define NO_ENCRYPTION
+//#define NO_LOAD_ENCRYPTION
+#define NO_SAVE_ENCRYPTION
 //---------------------------------------------------------------------------
 #define MAX_MASTER_PASS_SIZE  64
 //---------------------------------------------------------------------------
@@ -261,7 +262,7 @@ bool __fastcall TMainForm::LoadList(char *fname, char *password)
 	// Check the file's size
 	CFileManager FileManager;
 	UINT fsize = FileManager.GetSize(fname);
-	if(fsize < sizeof(DWORD) * 3){
+	if(fsize < sizeof(DWORD) * 2){
 		ShowMessage("Invalid or corrupted file.");
 		return false;
 	}
@@ -292,7 +293,7 @@ bool __fastcall TMainForm::LoadList(char *fname, char *password)
 		memcpy(MPBuffer.GetBuffer(), password, MPLen);
 
 		// Decrypt the buffer using the hash of the master password
-		#ifndef NO_ENCRYPTION
+		#ifndef NO_LOAD_ENCRYPTION
 		Buffer.Decrypt(MPBuffer.Hash());
 		#endif
 		//Buffer.SaveToFile("C:\\Temp\\Decrypted.bin");
@@ -415,7 +416,7 @@ bool __fastcall TMainForm::SaveList(char *fname, char *password)
 
 		// Encrypt the buffer using the master password hash
 		//Buffer.SaveToFile("C:\\Temp\\Original.bin");
-		#ifndef NO_ENCRYPTION
+		#ifndef NO_SAVE_ENCRYPTION
 		Buffer.Encrypt(MPBuffer.Hash());
 		#endif
 
